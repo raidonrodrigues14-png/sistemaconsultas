@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Agenda de Sessões</title>
@@ -84,12 +85,31 @@
   footer{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:36px}
 </style>
 </head>
+<script src="agendamento-funcoes.js"></script>
 <body>
 <div class="wrap" id="app"></div>
 <footer id="footer"></footer>
 
 <script>
+  
+  // Pegue esses valores em: Supabase → Project Settings → API
+  const SUPABASE_URL = 'https://bwlqpuhszkalofzfunxn.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_wFGOPX-Mk_OPTI7nfjmQqA_QyFMG3jX';
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Função que o agendamento-funcoes.js espera
+  function showToast(msg, erro){
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);'
+      + 'background:'+(erro?'#c0392b':'#27ae60')+';color:#fff;padding:.8rem 1.2rem;'
+      + 'border-radius:10px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);font-size:.9rem';
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(), 3500);
+  }
+</script>
 /* ===================== estado / armazenamento ===================== */
+
 const KEY='therapy_schedule_v1', PRICE_KEY='therapy_price_v1', PIX_KEY='therapy_pix_v1', ADMIN_PIN='2026';
 const HOLD_TIMEOUT_MS=15*60*1000; // 15 min sem pagar libera o horário de novo
 const DOW=['dom','seg','ter','qua','qui','sex','sáb'];
