@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agenda de Sessões</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#ECEFE8; --ink:#1E2A24; --ink-soft:#5B6961; --surface:#FFFFFF;
+    --line:#D7D9CC; --accent:#3F6657; --accent-ink:#F4F7F2; --warm:#B4784E; --warm-bg:#F3E4C8;
+    --danger:#A6493A; --booked:#CBC6B9; --shadow: 0 1px 2px rgba(30,42,36,.06);
+    box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#161C19; --ink:#EDEFE7; --ink-soft:#A9B2AB; --surface:#1F2621;
+      --line:#31392F; --accent:#7FAE99; --accent-ink:#10160F; --warm:#D89A6E; --warm-bg:#3A3325;
+      --danger:#E08C7A; --booked:#3A3F35;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#161C19; --ink:#EDEFE7; --ink-soft:#A9B2AB; --surface:#1F2621;
+    --line:#31392F; --accent:#7FAE99; --accent-ink:#10160F; --warm:#D89A6E; --warm-bg:#3A3325;
+    --danger:#E08C7A; --booked:#3A3F35;
+  }
+  *{box-sizing:border-box}
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;line-height:1.5;min-height:100%}
+  .wrap{max-width:640px;margin:0 auto;padding:32px 20px 80px}
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:500;margin:0}
+  .tagline{color:var(--ink-soft);font-size:15px;margin-top:6px}
+  header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:28px}
+  a.admin-link{font-size:13px;color:var(--ink-soft);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:1px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
+  .card+.card{margin-top:16px}
+  .day-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:18px}
+  .day-tab{flex:0 0 auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer;text-align:center;min-width:64px}
+  .day-tab .dow{display:block;font-size:11px;color:var(--ink-soft);text-transform:capitalize}
+  .day-tab .num{display:block;font-family:'Fraunces',serif;font-size:19px;margin-top:2px}
+  .day-tab.active{background:var(--accent);border-color:var(--accent)}
+  .day-tab.active .dow,.day-tab.active .num{color:var(--accent-ink)}
+  .slots{display:flex;flex-wrap:wrap;gap:10px}
+  .slot-btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:10px 16px;font-size:15px;cursor:pointer;font-family:'Inter',sans-serif}
+  .slot-btn:hover{border-color:var(--accent)}
+  .empty{color:var(--ink-soft);font-size:14px;padding:6px 0}
+  label{display:block;font-size:13px;color:var(--ink-soft);margin:14px 0 6px}
+  input[type=text],input[type=tel],input[type=date],input[type=time],input[type=password],input[type=number],textarea{
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);font-size:15px;font-family:'Inter',sans-serif}
+  textarea{resize:vertical}
+  input:focus,button:focus,.slot-btn:focus,.day-tab:focus{outline:2px solid var(--accent);outline-offset:2px}
+  button.primary{background:var(--accent);color:var(--accent-ink);border:none;border-radius:9px;padding:13px 20px;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-top:16px;font-family:'Inter',sans-serif}
+  button.secondary{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:11px 18px;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;width:100%}
+  button.ghost{background:none;border:none;color:var(--ink-soft);font-size:13px;cursor:pointer;text-decoration:underline;padding:4px 0}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .policy{background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:14px;font-size:13.5px;color:var(--ink-soft);margin-top:16px}
+  .policy strong{color:var(--ink)}
+  .row{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;background:var(--booked);color:var(--ink)}
+  .badge.ok{background:var(--accent);color:var(--accent-ink)}
+  .badge.warn{background:var(--danger);color:#fff}
+  .link-box{display:flex;gap:8px;margin-top:10px}
+  .link-box input{flex:1;font-size:12.5px}
+  .center{text-align:center;padding:20px 0}
+  .muted{color:var(--ink-soft);font-size:13.5px}
+  .time-row{display:flex;gap:8px;margin-top:8px}
+  .time-row input{flex:1}
+  .day-block{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+  .day-block:first-of-type{border-top:none;margin-top:0;padding-top:0}
+  .day-block .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:6px 10px 6px 12px;font-size:13px;margin:4px 6px 0 0}
+  .chip button{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:14px;line-height:1;padding:0}
+  .chip a{color:var(--accent);text-decoration:none;font-size:14px;margin-left:2px}
+  .chip.booked{background:var(--booked)}
+  .chip.pending{background:var(--warm-bg)}
+  .qr-box{display:flex;justify-content:center;padding:12px 0}
+  .qr-box img,.qr-box canvas,.qr-box table{margin:0 auto}
+  .wa-card h3{display:flex;align-items:center;gap:8px}
+  .wa-icon{width:30px;height:30px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  footer{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:36px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<footer id="footer"></footer>
+
+<script>
+/* ===================== estado / armazenamento ===================== */
+const KEY='therapy_schedule_v1', PRICE_KEY='therapy_price_v1', PIX_KEY='therapy_pix_v1', ADMIN_PIN='2026';
+const HOLD_TIMEOUT_MS=15*60*1000; // 15 min sem pagar libera o horário de novo
+const DOW=['dom','seg','ter','qua','qui','sex','sáb'];
+const MONTHS=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+function loadSlots(){ try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}} }
+function saveSlots(s){ localStorage.setItem(KEY, JSON.stringify(s)); }
+function getPrice(){ return localStorage.getItem(PRICE_KEY) || '150,00'; }
+function setPrice(v){ localStorage.setItem(PRICE_KEY, v); }
+function getPixConfig(){ try{return JSON.parse(localStorage.getItem(PIX_KEY))||{chave:'',nome:'',cidade:''}}catch(e){return {chave:'',nome:'',cidade:''}} }
+function setPixConfig(cfg){ localStorage.setItem(PIX_KEY, JSON.stringify(cfg)); }
+function priceToNumber(str){ return parseFloat(String(str||'0').replace(/\./g,'').replace(',','.'))||0; }
+function slotKey(date,time){ return date+'|'+time; }
+function fmtDate(d){ const [y,m,day]=d.split('-').map(Number); const dt=new Date(y,m-1,day); return {dow:DOW[dt.getDay()], num:day, full:day+' de '+MONTHS[m-1], dt}; }
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function sessionDate(date,time){ return new Date(date+'T'+time+':00'); }
+function rndToken(){ return Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6); }
+function fmtDeadline(dt){ return dt.toLocaleDateString('pt-BR')+' às '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function digitsOnly(s){ return (s||'').replace(/\D/g,''); }
+function waLink(phone,msg){ let d=digitsOnly(phone); if(d.length<=11) d='55'+d; return 'https://wa.me/'+d+'?text='+encodeURIComponent(msg); }
+function notifyMsg(nome,f,time,deadline){ return 'Olá, '+nome+'! Sua sessão está confirmada para '+f.full+', às '+time+'. Você pode cancelar gratuitamente até '+fmtDeadline(deadline)+'.'; }
+
+/* ===================== Pix (BR Code / EMV estático) ===================== */
+function pixCRC16(payload){
+  let poly=0x1021, res=0xFFFF;
+  for(let i=0;i<payload.length;i++){
+    res^=(payload.charCodeAt(i)<<8);
+    for(let j=0;j<8;j++){ res=(res&0x8000)?((res<<1)^poly)&0xFFFF:(res<<1)&0xFFFF; }
+  }
+  return res.toString(16).toUpperCase().padStart(4,'0');
+}
+function pixCampo(id,valor){ return id+String(valor.length).padStart(2,'0')+valor; }
+function gerarPayloadPix(valorNum){
+  const cfg=getPixConfig();
+  const gui=pixCampo('00','BR.GOV.BCB.PIX');
+  const chave=pixCampo('01', cfg.chave||'');
+  const conta=pixCampo('26', gui+chave);
+  const mcc=pixCampo('52','0000');
+  const moeda=pixCampo('53','986');
+  const valor=pixCampo('54', (valorNum||0).toFixed(2));
+  const pais=pixCampo('58','BR');
+  const nome=pixCampo('59', (cfg.nome||'RECEBEDOR').substring(0,25));
+  const cidade=pixCampo('60', (cfg.cidade||'BRASIL').substring(0,15));
+  const txid=pixCampo('62', pixCampo('05','***'));
+  const poi=pixCampo('01','11');
+  const formato=pixCampo('00','01');
+  const semCrc=formato+poi+conta+mcc+moeda+valor+pais+nome+cidade+txid+'6304';
+  return semCrc+pixCRC16(semCrc);
+}
+function renderizarQrEm(containerId,payload){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML='';
+  if(window.QRCode) new QRCode(el,{text:payload,width:180,height:180});
+}
+function pixConfigurado(){ const c=getPixConfig(); return !!(c.chave && c.nome && c.cidade); }
+
+/* ===================== ciclo de vida de um horário ===================== */
+// status: 'disponivel' -> 'aguardando_pagamento' -> 'reservado'
+function iniciarPendencia(key,nome,tel){
+  const cur=loadSlots(); const s=cur[key];
+  if(!s || s.status!=='disponivel') return null;
+  s.status='aguardando_pagamento'; s.clienteNome=nome; s.clienteTel=tel||''; s.token=rndToken(); s.heldAt=Date.now();
+  saveSlots(cur); return s;
+}
+function confirmarPagamento(key){
+  const cur=loadSlots(); const s=cur[key];
+  if(!s || s.status!=='aguardando_pagamento') return null;
+  s.status='reservado'; s.bookedAt=Date.now();
+  saveSlots(cur); return s;
+}
+function cancelarPendencia(key){
+  const cur=loadSlots(); if(!cur[key]) return;
+  cur[key]={date:cur[key].date,time:cur[key].time,status:'disponivel'};
+  saveSlots(cur);
+}
+function liberarPendenciasExpiradas(){
+  const cur=loadSlots(); const limite=Date.now()-HOLD_TIMEOUT_MS; let mudou=false;
+  Object.keys(cur).forEach(k=>{
+    const s=cur[k];
+    if(s.status==='aguardando_pagamento' && s.heldAt && s.heldAt<limite){ cur[k]={date:s.date,time:s.time,status:'disponivel'}; mudou=true; }
+  });
+  if(mudou) saveSlots(cur);
+}
+
+const app=document.getElementById('app');
+let selected={date:null,time:null,step:'browse'}; // browse -> form -> pay -> done
+let pendingKeys=null;   // chaves aguardando confirmação de pagamento feitas pelo profissional
+let lastSavedInfo=null; // resumo do que foi salvo em "Salvar agenda"
+
+function render(){
+  const hash=location.hash;
+  if(hash.startsWith('#cancelar/')) return renderCancel(hash);
+  if(hash==='#profissional') return renderAdmin();
+  renderClient();
+}
+
+/* ===================== cliente ===================== */
+function renderClient(){
+  liberarPendenciasExpiradas();
+  const slots=loadSlots();
+  const today=todayStr();
+  const byDate={};
+  Object.values(slots).forEach(s=>{
+    if(s.status!=='disponivel') return;
+    if(s.date<today) return;
+    (byDate[s.date]=byDate[s.date]||[]).push(s);
+  });
+  const dates=Object.keys(byDate).sort();
+  document.getElementById('footer').innerHTML='';
+
+  if(selected.step==='form' || selected.step==='pay'){ return renderBookingFlow(); }
+  if(selected.step==='done'){ return renderDone(); }
+
+  if(!dates.length){
+    app.innerHTML = header() + `<div class="card center"><p class="muted">Nenhum horário disponível no momento.<br>Volte em breve — a agenda é atualizada semanalmente.</p></div>`;
+    return;
+  }
+  if(!selected.date || !dates.includes(selected.date)) selected.date=dates[0];
+
+  app.innerHTML = header() + `
+    <div class="card">
+      <div class="day-tabs">
+        ${dates.map(d=>{const f=fmtDate(d); return `<div class="day-tab ${d===selected.date?'active':''}" data-date="${d}" tabindex="0"><span class="dow">${f.dow}</span><span class="num">${f.num}</span></div>`}).join('')}
+      </div>
+      <div class="slots">
+        ${byDate[selected.date].sort((a,b)=>a.time.localeCompare(b.time)).map(s=>`<button class="slot-btn" data-time="${s.time}">${s.time}</button>`).join('')}
+      </div>
+    </div>`;
+
+  app.querySelectorAll('.day-tab').forEach(el=>el.onclick=()=>{selected.date=el.dataset.date; render();});
+  app.querySelectorAll('.slot-btn').forEach(el=>el.onclick=()=>{selected.time=el.dataset.time; selected.step='form'; render();});
+}
+
+function header(){
+  return `<header class="top"><div><h1>Agenda de Sessões</h1><p class="tagline">Escolha um dia e horário disponível para sua sessão.</p></div><a class="admin-link" href="#profissional">área do profissional</a></header>`;
+}
+
+function renderBookingFlow(){
+  const f=fmtDate(selected.date);
+  const deadline=new Date(sessionDate(selected.date,selected.time).getTime()-6*3600*1000);
+  document.getElementById('footer').innerHTML='';
+
+  if(selected.step==='form'){
+    app.innerHTML = header() + `
+      <div class="card">
+        <h3>${f.full}, às ${selected.time}</h3>
+        <p class="muted">Valor da sessão: R$ ${getPrice()}</p>
+        <label for="nome">Nome</label>
+        <input type="text" id="nome" placeholder="Seu nome completo">
+        <label for="tel">Telefone / WhatsApp</label>
+        <input type="tel" id="tel" placeholder="(00) 00000-0000">
+        <div class="policy"><strong>Política de cancelamento:</strong> você pode cancelar esta sessão gratuitamente até <strong>${fmtDeadline(deadline)}</strong> (6 horas antes do horário marcado). Após esse prazo, o cancelamento não será mais possível pelo sistema.</div>
+        <button class="primary" id="goPay">Ir para pagamento</button>
+        <button class="ghost" id="back">← escolher outro horário</button>
+      </div>`;
+    document.getElementById('back').onclick=()=>{selected.step='browse';render();};
+    document.getElementById('goPay').onclick=()=>{
+      const nome=document.getElementById('nome').value.trim();
+      const tel=document.getElementById('tel').value.trim();
+      if(!nome||!tel){ alert('Preencha nome e telefone para continuar.'); return; }
+      selected.nome=nome; selected.tel=tel; selected.step='pay'; render();
+    };
+    return;
+  }
+
+  // ---- pagamento via Pix ----
+  const key=slotKey(selected.date,selected.time);
+  let cur=loadSlots(); let s=cur[key];
+  if(!s || s.status==='disponivel'){
+    s=iniciarPendencia(key, selected.nome, selected.tel);
+    if(!s){ alert('Esse horário acabou de ser reservado por outra pessoa. Escolha outro.'); selected.step='browse'; render(); return; }
+  }
+  if(!pixConfigurado()){
+    app.innerHTML = header() + `<div class="card center"><p class="muted">O profissional ainda não configurou a chave Pix para recebimento. Peça para ele preencher isso em "área do profissional".</p><button class="secondary" id="backNoPix" style="margin-top:12px">← voltar</button></div>`;
+    document.getElementById('backNoPix').onclick=()=>{ cancelarPendencia(key); selected.step='form'; render(); };
+    return;
+  }
+  const valor=priceToNumber(getPrice());
+  const payload=gerarPayloadPix(valor);
+  app.innerHTML = header() + `
+    <div class="card">
+      <h3>Pagamento via Pix</h3>
+      <div class="row"><span>Sessão</span><span>${f.full}, ${selected.time}</span></div>
+      <div class="row"><span>Cliente</span><span>${selected.nome}</span></div>
+      <div class="row"><span>Valor</span><span>R$ ${getPrice()}</span></div>
+      <div class="qr-box" id="qrBox"></div>
+      <label for="pixCode">Pix Copia e Cola</label>
+      <textarea id="pixCode" readonly style="min-height:70px;font-size:12.5px"></textarea>
+      <button class="secondary" id="copyPix" style="margin-top:8px">Copiar código Pix</button>
+      <p class="muted" style="margin-top:14px">Depois de pagar, a confirmação é feita pelo profissional. Só clique em confirmar após concluir o Pix.</p>
+      <button class="primary" id="confirmPay">✅ Já paguei — confirmar agendamento</button>
+      <button class="ghost" id="back2">← cancelar e escolher outro horário</button>
+    </div>`;
+  renderizarQrEm('qrBox', payload);
+  document.getElementById('pixCode').value=payload;
+  document.getElementById('copyPix').onclick=()=>{
+    const t=document.getElementById('pixCode'); t.select();
+    navigator.clipboard?.writeText(t.value).catch(()=>{});
+  };
+  document.getElementById('back2').onclick=()=>{ cancelarPendencia(key); selected.step='form'; render(); };
+  document.getElementById('confirmPay').onclick=(e)=>{
+    e.target.disabled=true; e.target.textContent='Confirmando…';
+    const r=confirmarPagamento(key);
+    if(!r){ alert('Não foi possível confirmar o pagamento. Tente novamente.'); e.target.disabled=false; e.target.textContent='✅ Já paguei — confirmar agendamento'; return; }
+    selected.step='done'; selected.token=r.token; selected.key=key;
+    render();
+  };
+}
+
+function renderDone(){
+  const f=fmtDate(selected.date);
+  const deadline=new Date(sessionDate(selected.date,selected.time).getTime()-6*3600*1000);
+  const cancelUrl=location.origin+location.pathname+'#cancelar/'+encodeURIComponent(selected.key)+'/'+selected.token;
+  app.innerHTML = header() + `
+    <div class="card">
+      <span class="badge ok">confirmado</span>
+      <h3 style="margin-top:10px">Sessão agendada</h3>
+      <div class="row"><span>Data</span><span>${f.full}</span></div>
+      <div class="row"><span>Horário</span><span>${selected.time}</span></div>
+      <div class="row"><span>Cliente</span><span>${selected.nome}</span></div>
+      <div class="policy">Você pode cancelar gratuitamente até <strong>${fmtDeadline(deadline)}</strong>. Guarde o link abaixo para cancelar, se precisar.</div>
+      <div class="link-box"><input type="text" readonly value="${cancelUrl}" id="cancelLink"><button class="secondary" id="copyBtn" style="width:auto">copiar</button></div>
+      <a style="display:block;text-align:center;text-decoration:none;margin-top:12px;padding:11px 18px;border-radius:9px;border:1px solid var(--line);color:var(--ink);font-size:14px" href="${waLink(selected.tel, notifyMsg(selected.nome,f,selected.time,deadline))}" target="_blank" rel="noopener">Enviar confirmação por WhatsApp</a>
+      <button class="primary" id="newBooking">Agendar outra sessão</button>
+    </div>`;
+  document.getElementById('copyBtn').onclick=()=>{
+    const inp=document.getElementById('cancelLink'); inp.select();
+    navigator.clipboard?.writeText(inp.value).catch(()=>{});
+  };
+  document.getElementById('newBooking').onclick=()=>{selected={date:null,time:null,step:'browse'}; render();};
+}
+
+function renderCancel(hash){
+  const parts=decodeURIComponent(hash.slice('#cancelar/'.length)).split('/');
+  const key=parts[0], token=parts[1];
+  const slots=loadSlots();
+  const s=slots[key];
+  document.getElementById('footer').innerHTML='';
+  if(!s || s.status!=='reservado' || s.token!==token){
+    app.innerHTML = header() + `<div class="card center"><p class="muted">Link de cancelamento inválido ou sessão já cancelada.</p></div>`;
+    return;
+  }
+  const [date,time]=key.split('|');
+  const f=fmtDate(date);
+  const sessionDt=sessionDate(date,time);
+  const deadline=new Date(sessionDt.getTime()-6*3600*1000);
+  const canCancel=new Date() < deadline;
+  app.innerHTML = header() + `
+    <div class="card">
+      <h3>${f.full}, às ${time}</h3>
+      <div class="row"><span>Cliente</span><span>${s.clienteNome}</span></div>
+      ${canCancel ? `
+        <div class="policy">O cancelamento ainda está dentro do prazo (até <strong>${fmtDeadline(deadline)}</strong>).</div>
+        <button class="primary" id="doCancel" style="background:var(--danger)">Cancelar sessão</button>
+      ` : `
+        <div class="policy"><span class="badge warn">prazo encerrado</span><br><br>O prazo para cancelamento (até ${fmtDeadline(deadline)}) já passou. Não é mais possível cancelar pelo sistema — entre em contato diretamente com o profissional.</div>
+      `}
+    </div>`;
+  if(canCancel){
+    document.getElementById('doCancel').onclick=()=>{
+      if(!confirm('Confirmar cancelamento desta sessão?')) return;
+      cancelarPendencia(key);
+      app.innerHTML = header() + `<div class="card center"><span class="badge ok">cancelado</span><p class="muted" style="margin-top:10px">Sessão cancelada. O horário voltou a ficar disponível para outros clientes.</p></div>`;
+    };
+  }
+}
+
+/* ===================== profissional ===================== */
+let adminAuthed=sessionStorage.getItem('admin_ok')==='1';
+let draftTimes=['']; let draftDate=todayStr();
+
+function renderLastSaved(){
+  if(!lastSavedInfo || !lastSavedInfo.length) return '';
+  const f=fmtDate(lastSavedInfo[0].date);
+  const cur=loadSlots();
+  const linhas=lastSavedInfo.map(i=>{
+    const k=slotKey(i.date,i.time);
+    const s=cur[k];
+    let status='Horário aberto';
+    if(s && s.status==='aguardando_pagamento') status=s.clienteNome+' — aguardando pagamento';
+    else if(s && s.status==='reservado') status=s.clienteNome+' — confirmado';
+    return `<div class="row"><span>${i.time}</span><span>${status}</span></div>`;
+  }).join('');
+  return `<div class="policy" style="margin-top:16px"><strong>✅ Salvo — ${f.full}</strong>${linhas}</div>`;
+}
+
+function renderPendenciaBox(){
+  if(!pendingKeys || !pendingKeys.length) return '';
+  if(!pixConfigurado()){
+    return `<div class="card" style="margin-top:16px"><p class="muted">Preencha a chave Pix, o nome do recebedor e a cidade acima para gerar o QR de cobrança.</p></div>`;
+  }
+  return `<div class="card" style="margin-top:16px" id="pendenciaCard">
+    <h3>💳 Aguardando pagamento</h3>
+    <p class="tagline">Mostre este QR (ou envie o código) ao paciente. O horário só fica efetivamente agendado depois de confirmar o pagamento.</p>
+    <div class="qr-box" id="qrPendBox"></div>
+    <label for="pixPendCode">Pix Copia e Cola</label>
+    <textarea id="pixPendCode" readonly style="min-height:70px;font-size:12.5px"></textarea>
+    <button class="secondary" id="copyPixPend" style="margin-top:8px">Copiar código Pix</button>
+    <button class="primary" id="confirmPendPay" style="margin-top:12px">✅ Confirmar pagamento recebido</button>
+    <button class="ghost" id="cancelPend">cancelar horário(s) pendente(s)</button>
+  </div>`;
+}
+
+function renderAdmin(){
+  document.getElementById('footer').innerHTML='<span>área do profissional</span>';
+  if(!adminAuthed){
+    app.innerHTML = `<header class="top"><h1>Área do profissional</h1><a class="admin-link" href="#">voltar à agenda</a></header>
+      <div class="card">
+        <label for="pin">Senha de acesso</label>
+        <input type="password" id="pin" placeholder="••••">
+        <button class="primary" id="enter">Entrar</button>
+      </div>`;
+    document.getElementById('enter').onclick=()=>{
+      if(document.getElementById('pin').value===ADMIN_PIN){ adminAuthed=true; sessionStorage.setItem('admin_ok','1'); render(); }
+      else alert('Senha incorreta.');
+    };
+    return;
+  }
+  liberarPendenciasExpiradas();
+  const slots=loadSlots();
+  const today=todayStr();
+  const byDate={};
+  Object.values(slots).forEach(s=>{ if(s.date>=today) (byDate[s.date]=byDate[s.date]||[]).push(s); });
+  const dates=Object.keys(byDate).sort();
+  const pix=getPixConfig();
+
+  app.innerHTML = `<header class="top"><h1>Área do profissional</h1><a class="admin-link" href="#">ver como cliente</a></header>
+    <div class="card">
+      <h3>Liberar horários</h3>
+      <label for="valor">Valor da sessão (R$)</label>
+      <input type="text" id="valor" value="${getPrice()}">
+      <label for="pixChave">Chave Pix</label>
+      <input type="text" id="pixChave" value="${pix.chave}" placeholder="CPF, e-mail, telefone ou chave aleatória">
+      <label for="pixNome">Nome do recebedor (cadastrado no Pix)</label>
+      <input type="text" id="pixNome" value="${pix.nome}" placeholder="Ex: Maria Silva">
+      <label for="pixCidade">Cidade (cadastrada no Pix)</label>
+      <input type="text" id="pixCidade" value="${pix.cidade}" placeholder="Ex: SAO PAULO">
+      <label for="data">Dia</label>
+      <input type="date" id="data" value="${draftDate}" min="${today}">
+      <label for="nomeAgendar">Nome do paciente (opcional)</label>
+      <input type="text" id="nomeAgendar" placeholder="Deixe em branco para liberar o horário como disponível no link público">
+      <label>Horários</label>
+      <div id="timeRows"></div>
+      <button class="secondary" id="addTime" style="margin-top:8px">+ adicionar horário</button>
+      <button class="primary" id="saveAgenda">Salvar agenda</button>
+      ${renderLastSaved()}
+    </div>
+    ${renderPendenciaBox()}
+    <div class="card">
+      <h3>Semana</h3>
+      ${dates.length? dates.map(d=>{
+        const f=fmtDate(d);
+        const list=byDate[d].sort((a,b)=>a.time.localeCompare(b.time));
+        return `<div class="day-block"><div class="head"><strong>${f.dow}, ${f.full}</strong></div>${list.map(s=>{
+          const k=slotKey(s.date,s.time);
+          if(s.status==='reservado'){
+            const dl=new Date(sessionDate(s.date,s.time).getTime()-6*3600*1000);
+            return `<span class="chip booked">${s.time} — ${s.clienteNome} · ${s.clienteTel||'sem telefone'}${s.clienteTel?` <a href="${waLink(s.clienteTel, notifyMsg(s.clienteNome,f,s.time,dl))}" target="_blank" rel="noopener" title="notificar via WhatsApp">✆ notificar</a>`:''}
+            <button data-editbooking="${k}" title="editar agendamento">✏️</button>
+            <button data-cancelbooking="${k}" title="remover agendamento">×</button></span>`;
+          }
+          if(s.status==='aguardando_pagamento'){
+            return `<span class="chip pending">${s.time} — ${s.clienteNome} (aguardando pagamento)
+            <button data-confirmpend="${k}" title="confirmar pagamento">✅</button>
+            <button data-cancelpend="${k}" title="cancelar">×</button></span>`;
+          }
+          return `<span class="chip">${s.time} — disponível
+            <button data-manual="${k}" title="reservar manualmente para um paciente">+ reservar</button>
+            <button data-remove="${k}" title="remover">×</button></span>`;
+        }).join('')}</div>`;
+      }).join('') : `<p class="empty">Nenhum horário cadastrado ainda.</p>`}
+    </div>
+    <div class="card wa-card">
+      <h3><span class="wa-icon">📱</span> Notificação via WhatsApp</h3>
+      <p class="tagline">Envie a data de um agendamento para qualquer paciente, mesmo sem estar vinculado a um horário do sistema.</p>
+      <label for="waNome">Nome do paciente</label>
+      <input type="text" id="waNome" placeholder="Nome completo">
+      <label for="waTel">Telefone / WhatsApp</label>
+      <input type="tel" id="waTel" placeholder="(00) 00000-0000">
+      <label for="waData">Data do agendamento</label>
+      <input type="date" id="waData">
+      <label for="waHora">Horário</label>
+      <input type="time" id="waHora">
+      <div class="policy" id="waPreview"></div>
+      <button class="primary" id="waEnviar">📲 Enviar WhatsApp</button>
+    </div>`;
+
+  function renderTimeRows(){
+    document.getElementById('timeRows').innerHTML = draftTimes.map((t,i)=>`
+      <div class="time-row"><input type="time" value="${t}" data-i="${i}">
+      ${draftTimes.length>1?`<button class="secondary" data-remt="${i}" style="width:auto">remover</button>`:''}</div>`).join('');
+    document.querySelectorAll('[data-i]').forEach(el=>el.onchange=()=>{draftTimes[el.dataset.i]=el.value;});
+    document.querySelectorAll('[data-remt]').forEach(el=>el.onclick=()=>{draftTimes.splice(el.dataset.remt,1); renderTimeRows();});
+  }
+  renderTimeRows();
+  document.getElementById('addTime').onclick=()=>{draftTimes.push(''); renderTimeRows();};
+  document.getElementById('data').onchange=(e)=>{draftDate=e.target.value;};
+  document.getElementById('valor').onchange=(e)=>{setPrice(e.target.value.trim()||'150,00');};
+  document.getElementById('pixChave').onchange=(e)=>{setPixConfig({...getPixConfig(),chave:e.target.value.trim()});};
+  document.getElementById('pixNome').onchange=(e)=>{setPixConfig({...getPixConfig(),nome:e.target.value.trim()});};
+  document.getElementById('pixCidade').onchange=(e)=>{setPixConfig({...getPixConfig(),cidade:e.target.value.trim().toUpperCase()});};
+
+  document.getElementById('saveAgenda').onclick=()=>{
+    const times=draftTimes.filter(t=>t);
+    if(!times.length){ alert('Adicione ao menos um horário.'); return; }
+    const nomePaciente=document.getElementById('nomeAgendar').value.trim();
+    if(nomePaciente && !pixConfigurado()){ alert('Preencha a chave Pix, o nome do recebedor e a cidade antes de agendar com um paciente específico.'); return; }
+    const cur=loadSlots();
+    const salvos=[]; const novasPendencias=[];
+    times.forEach(t=>{
+      const k=slotKey(draftDate,t);
+      if(nomePaciente){
+        if(!cur[k] || cur[k].status==='disponivel'){
+          cur[k]={date:draftDate,time:t,status:'aguardando_pagamento',clienteNome:nomePaciente,clienteTel:'',token:rndToken(),heldAt:Date.now()};
+          novasPendencias.push(k);
+        }
+      } else if(!cur[k]){
+        cur[k]={date:draftDate,time:t,status:'disponivel'};
+      }
+      salvos.push({date:draftDate,time:t});
+    });
+    saveSlots(cur);
+    lastSavedInfo=salvos;
+    pendingKeys=novasPendencias.length?novasPendencias:null;
+    draftTimes=[''];
+    document.getElementById('nomeAgendar').value='';
+    render();
+  };
+
+  app.querySelectorAll('[data-remove]').forEach(el=>el.onclick=()=>{
+    if(!confirm('Remover este horário disponível?')) return;
+    const cur=loadSlots(); delete cur[el.dataset.remove]; saveSlots(cur); render();
+  });
+  app.querySelectorAll('[data-manual]').forEach(el=>el.onclick=()=>{
+    if(!pixConfigurado()){ alert('Preencha a chave Pix, o nome do recebedor e a cidade antes de reservar para um paciente.'); return; }
+    const nome=(prompt('Nome do paciente:')||'').trim(); if(!nome) return;
+    const tel=(prompt('Telefone/WhatsApp do paciente (com DDD):')||'').trim(); if(!tel) return;
+    const k=el.dataset.manual;
+    const s=iniciarPendencia(k,nome,tel);
+    if(!s){ alert('Este horário não está mais disponível.'); render(); return; }
+    pendingKeys=[k]; lastSavedInfo=null;
+    render();
+  });
+  app.querySelectorAll('[data-editbooking]').forEach(el=>el.onclick=()=>{
+    const k=el.dataset.editbooking;
+    const cur=loadSlots(); const s=cur[k]; if(!s) return;
+    const nome=(prompt('Nome do paciente:', s.clienteNome||'')||'').trim(); if(!nome) return;
+    const tel=(prompt('Telefone/WhatsApp:', s.clienteTel||'')||'').trim(); if(!tel) return;
+    s.clienteNome=nome; s.clienteTel=tel;
+    saveSlots(cur); render();
+  });
+  app.querySelectorAll('[data-cancelbooking]').forEach(el=>el.onclick=()=>{
+    if(!confirm('Remover este agendamento? O horário volta a ficar disponível para outros pacientes.')) return;
+    cancelarPendencia(el.dataset.cancelbooking); render();
+  });
+  app.querySelectorAll('[data-confirmpend]').forEach(el=>el.onclick=()=>{
+    confirmarPagamento(el.dataset.confirmpend);
+    pendingKeys=null; lastSavedInfo=null;
+    render();
+  });
+  app.querySelectorAll('[data-cancelpend]').forEach(el=>el.onclick=()=>{
+    if(!confirm('Cancelar este horário pendente?')) return;
+    cancelarPendencia(el.dataset.cancelpend);
+    pendingKeys=null;
+    render();
+  });
+
+  if(pendingKeys && pendingKeys.length && pixConfigurado()){
+    const valor=priceToNumber(getPrice())*pendingKeys.length;
+    const payload=gerarPayloadPix(valor);
+    renderizarQrEm('qrPendBox', payload);
+    document.getElementById('pixPendCode').value=payload;
+    document.getElementById('copyPixPend').onclick=()=>{
+      const t=document.getElementById('pixPendCode'); t.select();
+      navigator.clipboard?.writeText(t.value).catch(()=>{});
+    };
+    document.getElementById('confirmPendPay').onclick=()=>{
+      pendingKeys.forEach(k=>confirmarPagamento(k));
+      pendingKeys=null; lastSavedInfo=null;
+      render();
+    };
+    document.getElementById('cancelPend').onclick=()=>{
+      if(!confirm('Cancelar estes horários pendentes?')) return;
+      pendingKeys.forEach(k=>cancelarPendencia(k));
+      pendingKeys=null;
+      render();
+    };
+  }
+
+  function waAtualizarPreview(){
+    const nome=document.getElementById('waNome').value.trim()||'paciente';
+    const dataStr=document.getElementById('waData').value;
+    const hora=document.getElementById('waHora').value;
+    let msg='Olá, '+nome+'!';
+    if(dataStr){ const f=fmtDate(dataStr); msg+=' Seu atendimento está confirmado para '+f.full+(hora?', às '+hora:'')+'.'; }
+    else{ msg+=' Confira a data do seu atendimento.'; }
+    msg+=' Qualquer dúvida, estamos à disposição.';
+    document.getElementById('waPreview').textContent=msg;
+  }
+  ['waNome','waData','waHora'].forEach(id=>{ document.getElementById(id).oninput=waAtualizarPreview; });
+  waAtualizarPreview();
+  document.getElementById('waEnviar').onclick=()=>{
+    const tel=document.getElementById('waTel').value.trim();
+    if(!tel){ alert('Informe o telefone do paciente.'); return; }
+    window.open(waLink(tel, document.getElementById('waPreview').textContent), '_blank');
+  };
+}
+
+window.addEventListener('hashchange', render);
+render();
+</script>
+</body>
+</html>
